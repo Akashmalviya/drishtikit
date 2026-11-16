@@ -23,5 +23,11 @@
   ],
   "scripts": {
     "build": "node ../../scripts/build-pkg.mjs"
+  },
+  "drishtikit": {
+    "lib": [
+      "ES2022",
+      "DOM"
+    ]
   }
 }
