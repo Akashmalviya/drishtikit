@@ -10,6 +10,7 @@
     "paths": { "@drishtikit/*": ["./packages/*/src/index.ts"] }
   },
   "include": [
+    "test-utils",
     "packages/core/src", "packages/core/test",
     "packages/mongo/src", "packages/mongo/test",
     "packages/nest/src", "packages/nest/test",
