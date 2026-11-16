@@ -1,6 +1,6 @@
 /** Shared Jest settings. Tests run on the TypeScript source, so no build is needed first. */
 const base = {
-  transform: { '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/../../tsconfig.json', isolatedModules: true, diagnostics: false }] },
+  transform: { '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/../../tsconfig.json', diagnostics: false }] },
   moduleNameMapper: {
     '^@drishtikit/(core|mongo|nest|browser)$': '<rootDir>/../../packages/$1/src/index.ts',
     '^(\\.{1,2}/.*)\\.js$': '$1',
