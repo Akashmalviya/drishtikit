@@ -6,12 +6,19 @@
 
 > **Status: planning.** There is no code yet. The design is in [docs/PLAN.md](docs/PLAN.md).
 
+## Phases
+
+1. **Usage analytics** (in progress): recording, storage, read functions and `query()`.
+2. **Feature flags:** the engine, the server guard and the client part.
+3. **Session replay:** a masked recorder, only with consent.
+
 ## What it gives you
 
 - **Recording on the server.** Each API call (route pattern, status, time), and the domain events that your app already publishes.
 - **Recording in the app.** Screens, tapped elements that have a `data-dk` attribute, and errors, sent in small batches.
 - **Storage.** Counters with latency histograms, written to MongoDB each 5 minutes, with a time limit (TTL) on raw data.
-- **A read API.** Totals, active people, top keys, p50 and p95, errors and a live stream, for your own dashboards.
+- **Read functions.** Totals, active people, top features, p50 and p95, errors, a live stream, and a flexible `query()`. They open no endpoint: your backend calls them behind your own guard, joins them with your own data, and sends the result to your own dashboard.
+- **Generic.** You name the main split of the data (`group`: team, community, colony...) and declare your own fields (`traits`, for example role or plan), each with a limit on the number of values.
 
 Drishtikit does not include a dashboard. You decide how to show the data, and who can see it.
 
@@ -30,7 +37,8 @@ Drishtikit does not include a dashboard. You decide how to show the data, and wh
 | `@drishtikit/core` | Types, keys, latency histogram, person code, key rules. Plain TypeScript. |
 | `@drishtikit/nest` | `DrishtiModule.forRoot()`: middleware, collector, flush, events endpoint, domain-event bridge, read service. |
 | `@drishtikit/mongo` | The MongoDB store. |
-| `@drishtikit/angular` | `provideDrishti()`: screens, `data-dk` taps, errors, batches. |
+| `@drishtikit/browser` | `createDrishti()`: taps on `data-dk` elements, errors, batches. No framework. |
+| `@drishtikit/angular` | `provideDrishti()`: the browser client plus screens from the Angular router. |
 
 ## Five-minute setup (the target)
 
@@ -40,7 +48,9 @@ DrishtiModule.forRoot({
   service: 'my-api',
   store: mongoStore({ uri: process.env.DRISHTI_MONGODB_URI }),
   key: process.env.DRISHTI_KEY, // secret for person codes
-  identify: (req) => ({ person: req.user?.id, tenant: req.user?.tenantId, role: req.user?.role }),
+  identify: (req) => ({ person: req.user?.id, group: req.user?.teamId, traits: { role: req.user?.role } }),
+  groupLabel: 'team',
+  traits: { role: { max: 10 } },
 });
 
 // App: app.config.ts
@@ -57,7 +67,7 @@ provideDrishti({ service: 'my-app', endpoint: '/api/drishti/events' });
 @Get('admin/overview')
 @UseGuards(MyAdminGuard)
 overview(@Query('days') days = 30) {
-  return this.drishti.read.overview({ days });
+  return this.drishti.overview({ days: Number(days) });
 }
 ```
 
