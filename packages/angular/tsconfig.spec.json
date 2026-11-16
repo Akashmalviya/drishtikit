@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "dom"],
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "types": ["jest"],
+    "paths": { "@drishtikit/browser": ["../browser/src/index.ts"] }
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}
