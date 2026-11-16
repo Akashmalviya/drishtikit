@@ -3,6 +3,7 @@ import { DrishtiEventsBridge } from './events-bridge.js';
 import { IngestService, createIngestController } from './ingest.js';
 import { DrishtiMiddleware, WILDCARD } from './middleware.js';
 import type { DrishtiAsyncOptions, DrishtiOptions, IngestOptions } from './options.js';
+import { DrishtiReader } from './reader.js';
 import { DrishtiService } from './service.js';
 import { DRISHTI_OPTIONS } from './tokens.js';
 
@@ -28,8 +29,8 @@ export class DrishtiModule implements NestModule {
       global: true,
       imports,
       controllers: [createIngestController(ingest?.path ?? '/drishti/events', ingest?.decorators)],
-      providers: [...optionProviders, DrishtiService, IngestService, DrishtiMiddleware, DrishtiEventsBridge],
-      exports: [DrishtiService],
+      providers: [...optionProviders, DrishtiService, IngestService, DrishtiMiddleware, DrishtiEventsBridge, DrishtiReader],
+      exports: [DrishtiService, DrishtiReader],
     };
   }
 

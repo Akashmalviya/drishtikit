@@ -13,11 +13,11 @@ beforeAll(async () => {
   mongo = await startMongo();
   client = new MongoClient(mongo.uri);
   await client.connect();
-});
+}, 60_000);
 afterAll(async () => {
   await client.close();
   await mongo.stop();
-});
+}, 60_000);
 
 const flush = (t: TestApp) => t.service.flusher.flush({ fast: true });
 const hit = async (t: TestApp, n: number, user: string, path = '/items/1') => {

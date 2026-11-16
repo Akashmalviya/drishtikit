@@ -54,6 +54,11 @@ export class Flusher {
     return out;
   }
 
+  /** Resolves when no flush is running. */
+  async waitIdle(): Promise<void> {
+    if (this.running) await this.running.catch(() => undefined);
+  }
+
   /** Write now. With `fast`, there is no wait between parts (used at shutdown). */
   async flush(options: { fast?: boolean } = {}): Promise<void> {
     if (options.fast) this.fastMode = true;
