@@ -14,6 +14,7 @@ module.exports = {
     { ...base, displayName: 'mongo', rootDir: 'packages/mongo', testEnvironment: 'node', testTimeout: 60000 },
     { ...base, displayName: 'nest', rootDir: 'packages/nest', testEnvironment: 'node', testTimeout: 60000 },
     { ...base, displayName: 'browser', rootDir: 'packages/browser', testEnvironment: 'jsdom' },
+    { ...base, displayName: 'example', rootDir: 'examples/nest-api', testEnvironment: 'node', moduleNameMapper: { ...base.moduleNameMapper, '^@drishtikit/(core|mongo|nest|browser)$': '<rootDir>/../../packages/$1/src/index.ts' } },
     '<rootDir>/packages/angular/jest.config.js',
   ],
 };
