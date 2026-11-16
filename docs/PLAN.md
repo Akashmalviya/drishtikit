@@ -1,6 +1,6 @@
 # Drishtikit design plan
 
-Status: phase 1 (usage analytics) in progress. This plan uses short, simple sentences (ASD-STE100 style).
+Status: phase 1 (usage analytics) is built (version 0.1.0, not published). This plan uses short, simple sentences (ASD-STE100 style).
 
 ## 1. Summary
 
@@ -300,3 +300,21 @@ DrishtiModule.forRoot({
 - More than one group type for one person.
 - Alerts (for example, "server errors went up").
 - A React wrapper for `@drishtikit/browser`.
+
+## 16. Notes from the phase 1 build
+
+Where the build differs from the plan above, or chose where the plan was open:
+
+1. **Hourly people** come from the list `h` in `people_days` (set with `$addToSet`), not from `hp{hNN}` counters in the day document. This keeps the count exact with many replicas.
+2. **Latency buckets** are stored as an object `b.0` to `b.8`, not as an array (MongoDB cannot create an array with `$inc` on an index). Day documents also keep `mx` (the maximum), so the last bucket gives a real maximum. The counters `t`, `dev`, `ver` and `pr` (event properties) count events, not people.
+3. **TTL fields.** Each raw document has a `t` date (the day at 00:00 UTC). `people` has `lastAt`. The TTL indexes use them.
+4. **Store interface.** `DrishtiStore` takes a list of changes (`UpdateOp`: `$inc`, `$max`, `$min`, `$addToSet`, `$push`, upsert) and gives documents back. The memory store and the memory merge of the reader use the same rules as MongoDB, so both give the same answers.
+5. **Memory merge.** The reader reads the store, then applies the changes that wait in the collector and in the flush that is running now. A reader that runs while a part is being written can count that part twice for a moment.
+6. **Partial write.** A write that fails in the middle gives back only the changes that failed. A network error with no detail gives back the whole part, so a change can be applied twice (at least once, not exactly once).
+7. **Trails** keep screens, taps, custom events, errors, domain events and API calls that are not `GET`, `HEAD` or `OPTIONS`. Browser errors keep `Name: message` (120 characters at most). API errors keep no message.
+8. **`forRootAsync`** takes `ingest.path` and `ingest.decorators` as plain values, because Nest needs the path of a controller when the module is made. New option `ingest.decorators` (for example `[Public()]`) lets the endpoint pass a global guard.
+9. **Per-process state.** The list of seen trait values (for `max`), the ingest rate limit and the live ring live in the memory of one server. With many servers, each applies its own limit.
+10. **Query.** `where` takes `group`, `key` and `route`. `activePeople` without a split and without a key filter reads the `people` collection (`last` on or after the first day), as in section 8.2. All other `activePeople` queries read `people_days` (120 days by default). `overview().busyHours` is weekday by hour. `health().slowRoutes` looks at the last 7 days.
+11. **Platform.** Express only (Fastify is not tested). NestJS 11, Angular 22, TypeScript 6.0, Node 22. The Angular package is tested with `jest-preset-angular`.
+12. **Not done in this build:** a `docs/` workspace package (the folder holds plain Markdown), and phases 2 and 3. Changesets is set up (`.changeset/config.json`), but no release was made.
+13. **Load test.** `examples/nest-api/LOADTEST.md` holds the numbers. With a load generator on the same laptop, p95 varies by about 0.5 ms between identical runs, so the 0.1 ms goal is also checked with a one-connection test that removes that noise (`scripts/overhead.cjs`).

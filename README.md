@@ -4,7 +4,7 @@
 
 *Drishti* (दृष्टि) means "vision" or "insight" in Hindi and Sanskrit.
 
-> **Status: planning.** There is no code yet. The design is in [docs/PLAN.md](docs/PLAN.md).
+> **Status: phase 1 (usage analytics) is built and not published yet.** Version 0.1.0. The design is in [docs/PLAN.md](docs/PLAN.md).
 
 ## Phases
 
@@ -30,45 +30,110 @@ Drishtikit does not include a dashboard. You decide how to show the data, and wh
 4. **Your data stays yours.** Everything goes into your own MongoDB.
 5. **Private by default.** No page text, typed text, search words, query strings, request bodies or IP addresses. People are keyed codes, not names.
 
-## Packages (planned)
+## Packages
 
 | Package | Contains |
 | --- | --- |
-| `@drishtikit/core` | Types, keys, latency histogram, person code, key rules. Plain TypeScript. |
-| `@drishtikit/nest` | `DrishtiModule.forRoot()`: middleware, collector, flush, events endpoint, domain-event bridge, read service. |
-| `@drishtikit/mongo` | The MongoDB store. |
+| `@drishtikit/core` | Types, keys, latency histogram, person code, time keys, key rules, query planner. Plain TypeScript. |
+| `@drishtikit/mongo` | `mongoStore()` (official `mongodb` driver) and `memoryStore()` (for tests). |
+| `@drishtikit/nest` | `DrishtiModule`: middleware, collector, flush, events endpoint, domain-event bridge, `DrishtiReader`. Needs NestJS 11 with Express. |
 | `@drishtikit/browser` | `createDrishti()`: taps on `data-dk` elements, errors, batches. No framework. |
-| `@drishtikit/angular` | `provideDrishti()`: the browser client plus screens from the Angular router. |
+| `@drishtikit/angular` | `provideDrishti()`: the browser client plus screens from the Angular router. Needs Angular 22. |
 
-## Five-minute setup (the target)
+## Quick start
+
+**1. The API.** Add the module in the start-up code. Business code does not change.
 
 ```ts
-// API: app.module.ts
-DrishtiModule.forRoot({
-  service: 'my-api',
-  store: mongoStore({ uri: process.env.DRISHTI_MONGODB_URI }),
-  key: process.env.DRISHTI_KEY, // secret for person codes
-  identify: (req) => ({ person: req.user?.id, group: req.user?.teamId, traits: { role: req.user?.role } }),
-  groupLabel: 'team',
-  traits: { role: { max: 10 } },
-});
+// app.module.ts
+import { DrishtiModule } from '@drishtikit/nest';
+import { mongoStore } from '@drishtikit/mongo';
 
-// App: app.config.ts
-provideDrishti({ service: 'my-app', endpoint: '/api/drishti/events' });
+@Module({
+  imports: [
+    DrishtiModule.forRoot({
+      service: 'my-api',
+      store: mongoStore({ uri: process.env.DRISHTI_MONGODB_URI, dbName: 'my_app_usage' }),
+      key: process.env.DRISHTI_KEY, // a secret of 32 characters or more, for person codes
+      identify: (req) => ({ person: req.user?.id, group: req.user?.teamId, traits: { role: req.user?.role } }),
+      groupLabel: 'team',
+      traits: { role: { max: 10 } }, // each trait is declared, with a limit on its values
+    }),
+  ],
+})
+export class AppModule {}
+
+// main.ts: Drishtikit writes its counters when the app stops
+app.enableShutdownHooks();
 ```
+
+A Mongoose app can use its own connection: `mongoStore({ client: connection.getClient() })`.
+
+**2. The app (Angular).**
+
+```ts
+// app.config.ts
+import { provideDrishti } from '@drishtikit/angular';
+
+provideDrishti({
+  endpoint: '/api/drishti/events',
+  version: '2026.11.16',
+  headers: () => {
+    const auth = inject(AuthService);
+    return () => ({ Authorization: `Bearer ${auth.token()}` });
+  },
+});
+```
+
+Without Angular, use `createDrishti({ endpoint, version, headers })` from `@drishtikit/browser`, and call `dk.screen('items/:id')` yourself.
+
+**3. Tag what you want to count.** No TypeScript change:
 
 ```html
-<!-- A tagged button: no TypeScript change -->
-<button data-dk="helper_add">Add helper</button>
+<button data-dk="helper_add" data-dk-method="upi">Add helper</button>
 ```
 
+The text of the button is never read. Extra `data-dk-<name>` values are sent as properties. Declare them on the API (`properties: { method: { max: 10 } }`), or they are dropped.
+
+**4. Read it in your own dashboard.** Drishtikit opens no read endpoint. Your backend calls `DrishtiReader` behind your own guard:
+
 ```ts
-// Your own dashboard endpoint: your guard, your UI
-@Get('admin/overview')
+@Controller('admin')
 @UseGuards(MyAdminGuard)
-overview(@Query('days') days = 30) {
-  return this.drishti.overview({ days: Number(days) });
+export class UsageController {
+  constructor(private readonly drishti: DrishtiReader) {}
+
+  @Get('overview')
+  overview(@Query('days') days = '30') {
+    return this.drishti.overview({ days: Number(days) });
+  }
+
+  @Get('teams')
+  async teams() {
+    const usage = await this.drishti.query({ metrics: ['activePeople', 'calls'], by: ['group'], days: 30 });
+    return usage.rows; // join with your own team names here
+  }
 }
+```
+
+Other read functions: `rules()`, `routes()`, `people()`, `health()`, `live()`, `trail()`, `setRule()`, `deleteRule()`, `forget(person)`. `query()` takes `metrics`, `by`, `where` and `days` (or `from` and `to`). A combination that is not supported throws `DrishtiQueryError` with the list of what is supported.
+
+A full example is in [examples/nest-api](examples/nest-api). Its load test result is in [examples/nest-api/LOADTEST.md](examples/nest-api/LOADTEST.md).
+
+## Privacy
+
+- Not kept: page text, typed text, search words, query strings, request bodies, IP addresses, full User-Agents.
+- People are codes (HMAC of the id with your key), not ids or names.
+- Traits and properties are declared, each with a maximum number of values. A value that looks like an email address or a phone number is refused.
+- Raw collections have a time limit (TTL). `forget(person)` erases one person.
+
+## Develop
+
+```sh
+npm install
+npm run build   # all packages
+npm run lint
+npm test        # needs no database: MongoDB runs in memory (mongodb-memory-server)
 ```
 
 ## Ideas we learn from
