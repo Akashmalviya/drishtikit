@@ -9,9 +9,9 @@
     "loadtest": "node scripts/loadtest.mjs"
   },
   "dependencies": {
-    "@drishtikit/core": "0.1.0",
-    "@drishtikit/mongo": "0.1.0",
-    "@drishtikit/nest": "0.1.0",
+    "@drishtikit/core": "0.1.1",
+    "@drishtikit/mongo": "0.1.1",
+    "@drishtikit/nest": "0.1.1",
     "@nestjs/common": "^11.2.10",
     "@nestjs/core": "^11.2.10",
     "@nestjs/platform-express": "^11.2.10",

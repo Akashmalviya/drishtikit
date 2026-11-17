@@ -123,7 +123,7 @@ dk.track('checkout_started', { method: 'upi' });   // properties: declared on th
 
 | Structure | Key | Holds |
 | --- | --- | --- |
-| Day counters | `group#day` | `n`, `e4`, `e5`, `ms`, `b[9]` (latency buckets), `k{key: uses}`, `t{trait: {value: n}}`, `dev{}`, `ver{}`, and for each hour `hc{hNN}`, `he{hNN}`, `hp{hNN}` |
+| Day counters | `group#day` | `n`, `e4`, `e5`, `ms`, `b[9]` (latency buckets), `k{key: uses}`, `tr{trait: {value: n}}`, `dev{}`, `ver{}`, and for each hour `hc{hNN}`, `he{hNN}`, `hp{hNN}` |
 | Route counters | `group#day#route` | `n`, `e4`, `e5`, `ms`, `mx`, `b[9]` |
 | Seen sets | `day#group#person`, `day#group#person#key`, `hour#group#person` | first visits not yet written |
 | Live ring | sequence number | the last `live.size` (2,000) samples, each with a sequence number |
@@ -152,7 +152,7 @@ dk.track('checkout_started', { method: 'upi' });   // properties: declared on th
 
 | Collection | `_id` | Holds | Indexes | TTL |
 | --- | --- | --- | --- | --- |
-| `usage_days` | `group#YYYY-MM-DD` | g, d, the day counters | `{d: -1}`, `{g: 1, d: -1}` | `retention.dayDocsDays` (730) |
+| `usage_days` | `group#YYYY-MM-DD` | g, d, the day counters (trait counters in `tr`; `t` is the TTL date) | `{d: -1}`, `{g: 1, d: -1}` | `retention.dayDocsDays` (730) |
 | `route_days` | `group#YYYY-MM-DD` | g, d, r{route: counters} | `{d: -1}` | `retention.routeDays` (90) |
 | `people_days` | `YYYY-MM-DD#group#person` | g, d, p, traits, dev, ver, k[] | `{g: 1, d: -1}`, `{d: -1}`, `{k: 1, d: -1}` | `retention.peopleDays` (120) |
 | `people` | `group#person` | g, p, first, last, traits | `{g: 1, first: 1}`, `{g: 1, last: 1}`, `{last: 1}` | `retention.personDays` (400) after `last` |
@@ -306,8 +306,8 @@ DrishtiModule.forRoot({
 Where the build differs from the plan above, or chose where the plan was open:
 
 1. **Hourly people** come from the list `h` in `people_days` (set with `$addToSet`), not from `hp{hNN}` counters in the day document. This keeps the count exact with many replicas.
-2. **Latency buckets** are stored as an object `b.0` to `b.8`, not as an array (MongoDB cannot create an array with `$inc` on an index). Day documents also keep `mx` (the maximum), so the last bucket gives a real maximum. The counters `t`, `dev`, `ver` and `pr` (event properties) count events, not people.
-3. **TTL fields.** Each raw document has a `t` date (the day at 00:00 UTC). `people` has `lastAt`. The TTL indexes use them.
+2. **Latency buckets** are stored as an object `b.0` to `b.8`, not as an array (MongoDB cannot create an array with `$inc` on an index). Day documents also keep `mx` (the maximum), so the last bucket gives a real maximum. The counters `tr` (traits), `dev`, `ver` and `pr` (event properties) count events, not people.
+3. **TTL fields.** Each raw document has a `t` date (the day at 00:00 UTC). `people` has `lastAt`. The TTL indexes use them. The trait counters are `tr`, not `t`: in 0.1.0 they shared the name `t` with the TTL date, and MongoDB refused the whole update. The memory store now refuses a change with clashing paths in the same way ("would create a conflict at").
 4. **Store interface.** `DrishtiStore` takes a list of changes (`UpdateOp`: `$inc`, `$max`, `$min`, `$addToSet`, `$push`, upsert) and gives documents back. The memory store and the memory merge of the reader use the same rules as MongoDB, so both give the same answers.
 5. **Memory merge.** The reader reads the store, then applies the changes that wait in the collector and in the flush that is running now. A reader that runs while a part is being written can count that part twice for a moment.
 6. **Partial write.** A write that fails in the middle gives back only the changes that failed. A network error with no detail gives back the whole part, so a change can be applied twice (at least once, not exactly once).

@@ -1,6 +1,6 @@
 {
   "name": "@drishtikit/nest",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "NestJS module for Drishtikit: middleware, collector, flush, ingest endpoint and reader.",
   "license": "MIT",
   "repository": {
@@ -25,7 +25,7 @@
     "build": "node ../../scripts/build-pkg.mjs"
   },
   "dependencies": {
-    "@drishtikit/core": "0.1.0"
+    "@drishtikit/core": "0.1.1"
   },
   "peerDependencies": {
     "@nestjs/common": "^11.0.0",

@@ -41,7 +41,7 @@ describe('Collector', () => {
       ms: 5150,
       mx: 5000,
       k: { 'route:GET /items/:id': 3 },
-      t: { role: { admin: 3 } },
+      tr: { role: { admin: 3 } },
       dev: { android: 3 },
       ver: { '1_2_3': 3 },
       hc: { h09: 2, h10: 1 },

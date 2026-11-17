@@ -1,6 +1,6 @@
 {
   "name": "@drishtikit/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Types, keys, histogram, person code, time keys and the query planner for Drishtikit.",
   "license": "MIT",
   "repository": {

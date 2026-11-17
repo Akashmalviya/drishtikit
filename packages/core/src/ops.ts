@@ -30,10 +30,34 @@ function compare(a: number | string | Date, b: number | string | Date): number {
 }
 
 /**
+ * Refuse a change that MongoDB would refuse: the same path in two operators (or twice),
+ * or a path that is a prefix of another path. The message follows MongoDB.
+ */
+export function assertNoPathConflict(op: UpdateOp): void {
+  const paths: string[] = [];
+  for (const field of ['onInsert', 'set', 'inc', 'max', 'min', 'addToSet', 'push'] as const) {
+    const bag = op[field];
+    if (bag) paths.push(...Object.keys(bag));
+  }
+  for (let i = 0; i < paths.length; i++) {
+    for (let j = i + 1; j < paths.length; j++) {
+      const a = paths[i] as string;
+      const b = paths[j] as string;
+      if (a === b || a.startsWith(`${b}.`) || b.startsWith(`${a}.`)) {
+        const shorter = a.length <= b.length ? a : b;
+        const longer = shorter === a ? b : a;
+        throw new Error(`Updating the path '${longer}' would create a conflict at '${shorter}'`);
+      }
+    }
+  }
+}
+
+/**
  * Apply one change to a document and return the new document (an upsert).
  * The memory store and the memory merge of the reader use it. It follows the rules of MongoDB.
  */
 export function applyUpdateOp(existing: StoredDoc | undefined, op: UpdateOp): StoredDoc {
+  assertNoPathConflict(op);
   const isNew = existing === undefined;
   const doc = (isNew ? { _id: op.id } : structuredClone(existing)) as Bag;
   if (isNew && op.onInsert) for (const [p, v] of Object.entries(op.onInsert)) setPath(doc, p, structuredClone(v));

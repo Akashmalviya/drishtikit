@@ -4,7 +4,7 @@
 
 *Drishti* (दृष्टि) means "vision" or "insight" in Hindi and Sanskrit.
 
-> **Status: phase 1 (usage analytics) is built and not published yet.** Version 0.1.0. The design is in [docs/PLAN.md](docs/PLAN.md).
+> **Status: phase 1 (usage analytics) is built and not published yet.** Version 0.1.1. The design is in [docs/PLAN.md](docs/PLAN.md).
 
 ## Phases
 
@@ -135,6 +135,14 @@ npm run build   # all packages
 npm run lint
 npm test        # needs no database: MongoDB runs in memory (mongodb-memory-server)
 ```
+
+## Release
+
+```sh
+npm run pack:all   # builds everything, writes the five .tgz files to ./packed/
+```
+
+`npm publish` for `@drishtikit/angular` must run from `packages/angular/dist` (the ng-packagr output), not from `packages/angular`. The source `package.json` of angular has no entry points. `pack:all` packs angular from `dist` for the same reason. The other four packages publish from their own folders.
 
 ## Ideas we learn from
 

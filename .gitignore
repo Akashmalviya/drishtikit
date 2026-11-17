@@ -8,3 +8,4 @@ coverage/
 .tsconfig.*.json
 .angular/
 out-tsc/
+packed/

@@ -1,6 +1,6 @@
 {
   "name": "@drishtikit/mongo",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MongoDB store and memory store for Drishtikit.",
   "license": "MIT",
   "repository": {
@@ -25,7 +25,7 @@
     "build": "node ../../scripts/build-pkg.mjs"
   },
   "dependencies": {
-    "@drishtikit/core": "0.1.0"
+    "@drishtikit/core": "0.1.1"
   },
   "peerDependencies": {
     "mongodb": ">=6.0.0"

@@ -425,7 +425,7 @@ export class Collector {
       a.b.forEach((v, i) => v && (inc[`b.${i}`] = v));
       a.hc.forEach((v, i) => v && (inc[`hc.${hh(i)}`] = v));
       a.he.forEach((v, i) => v && (inc[`he.${hh(i)}`] = v));
-      for (const [name, map] of [['k', a.k], ['t', a.t], ['dev', a.dev], ['ver', a.ver], ['pr', a.pr]] as const) {
+      for (const [name, map] of [['k', a.k], ['tr', a.t], ['dev', a.dev], ['ver', a.ver], ['pr', a.pr]] as const) {
         for (const [key, v] of map) inc[`${name}.${key}`] = v;
       }
       const op: UpdateOp = { id, onInsert: { g: a.g, d: a.d, t: dayToDate(a.d) }, inc };

@@ -189,4 +189,46 @@ describe('flush with MongoDB', () => {
     expect((await inner.find('usage_days', {}))[0]?.n).toBe(1);
     await app.close();
   });
+  it('writes the day, route, people and trail documents with traits declared (0.1.0 lost the day)', async () => {
+    const store = mongoStore({ client, dbName: 'flush_traits' });
+    const t = await makeApp(store, {
+      identify: (req) => ({
+        person: req.headers['x-user'],
+        group: req.headers['x-team'],
+        traits: { role: req.headers['x-role'], tier: req.headers['x-tier'] },
+      }),
+      traits: { role: { max: 3 }, tier: { max: 3 } },
+    });
+    const call = async (n: number, user: string, role: string, tier: string) => {
+      for (let i = 0; i < n; i++) {
+        await request(t.app.getHttpServer()).get('/items/1').set('x-user', user).set('x-team', 'team-a').set('x-role', role).set('x-tier', tier);
+      }
+      await tick();
+    };
+    await call(3, 'u1', 'admin', 'free');
+    await call(2, 'u2', 'member', 'free');
+    await request(t.app.getHttpServer())
+      .post('/drishti/events')
+      .set('x-user', 'u1')
+      .set('x-team', 'team-a')
+      .set('x-role', 'admin')
+      .set('x-tier', 'free')
+      .send({ v: '1.0.0', ev: [{ t: Date.now(), k: 'tap', n: 'add_item' }] })
+      .expect(204);
+    await flush(t);
+    expect(t.service.flusher.state.lastError).toBeNull();
+    const [day] = await t.store.find('usage_days', {});
+    expect(day).toBeDefined();
+    expect(day).toMatchObject({ n: 5, tr: { role: { admin: 4, member: 2 }, tier: { free: 6 } } });
+    expect(day?.t).toBeInstanceOf(Date);
+    const [route] = await t.store.find('route_days', {});
+    expect((route?.r as Record<string, { n: number }>)['GET /items/:id']?.n).toBe(5);
+    const people = await t.store.find('people', {});
+    expect(people).toHaveLength(2);
+    expect(people.find((p) => p.traits && (p.traits as Record<string, string>).role === 'admin')).toBeDefined();
+    const peopleDays = await t.store.find('people_days', {});
+    expect(peopleDays).toHaveLength(2);
+    expect(await t.store.count('trails', {})).toBeGreaterThan(0);
+    await t.close();
+  });
 });

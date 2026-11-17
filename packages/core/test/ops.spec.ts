@@ -88,3 +88,21 @@ describe('matchDoc', () => {
     expect(matchDoc('people', { lastFrom: '2026-11-17' }, person)).toBe(false);
   });
 });
+
+describe('path conflicts (the same rule as MongoDB)', () => {
+  it('refuses a path set and a child path incremented', () => {
+    expect(() => applyUpdateOp(undefined, { id: 'x', onInsert: { t: new Date(0) }, inc: { 't.role.admin': 1 } })).toThrow(
+      "Updating the path 't.role.admin' would create a conflict at 't'",
+    );
+  });
+  it('refuses the same path in two operators', () => {
+    expect(() => applyUpdateOp(undefined, { id: 'x', set: { a: 1 }, inc: { a: 1 } })).toThrow('would create a conflict at');
+  });
+  it('refuses a path that is a prefix of another, in any order', () => {
+    expect(() => applyUpdateOp(undefined, { id: 'x', inc: { 'k.a': 1 }, max: { k: 2 } })).toThrow("would create a conflict at 'k'");
+  });
+  it('allows paths that only share a first letters', () => {
+    const doc = applyUpdateOp(undefined, { id: 'x', onInsert: { t: 'ttl' }, inc: { tr: 1, 'tr2.a': 1 } } as UpdateOp);
+    expect(doc).toMatchObject({ t: 'ttl', tr: 1 });
+  });
+});

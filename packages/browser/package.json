@@ -1,6 +1,6 @@
 {
   "name": "@drishtikit/browser",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Framework-free browser client for Drishtikit.",
   "license": "MIT",
   "repository": {

@@ -18,6 +18,7 @@
     "lint": "eslint . && tsc --noEmit -p tsconfig.json",
     "test": "jest --runInBand",
     "build": "npm run build --workspaces --if-present",
+    "pack:all": "node scripts/pack-all.mjs",
     "changeset": "changeset",
     "version-packages": "changeset version"
   },
