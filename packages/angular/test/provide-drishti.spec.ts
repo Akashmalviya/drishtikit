@@ -42,7 +42,11 @@ describe('provideDrishti', () => {
       ['screen', 'teams/:teamId/members'],
       ['screen', '/'],
     ]);
-    const text = fetchMock.mock.calls.map(([, init]) => init.body).join('');
+    // The times ("t") are clock numbers and can hold "42", so they are taken out before the check.
+    const text = fetchMock.mock.calls
+      .map(([, init]) => init.body as string)
+      .join('')
+      .replace(/"t":\d+/g, '');
     expect(text).not.toContain('42');
     expect(text).not.toContain('secret');
   });
